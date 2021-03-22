@@ -2,22 +2,18 @@ import ast
 import sys
 import time
 
-
-
-
-
 # Login part(Written by Elshad Sabziyev)
 
 
-
-
-
-
-counter = 0     #counter for timeout
+counter = 0  # counter for timeout
 global t0
 
 
-def run():  # runs login/register functions
+class RestrictedItems:
+    restricted = ["a", "b", "c", "d", "e", "n", "x", "y", " ", "", "A", "B", "C", "D", "E", "N", "X", "Y"]
+
+
+def run(role):  # runs login/register functions
     print('''
 Welcome to quiz app.
 Do you want to login or register?
@@ -37,62 +33,67 @@ Please, select one of the options below:
             break
 
     if selection == "1":
-        login()
+        login(role)
 
     elif selection == "2":
-        register()
+        register(role)
 
     elif selection == "x" or selection == "X":
         exit("bye!!!")
 
 
-def login():  # Function that related to login choice
-    if counter != 0:
-        choice_l = (input("""
+def login(role):  # Function that related to login choice
 
-B > Go Back
-X > Exit
+    username = input("\nPlease, enter your username >>> ")
+    password = input("Please, enter your password >>> ")
+    isCorrect = loginControl(username, password, role)  # Gets info that if login credentials are correct or not
+    if isCorrect:
+        loginSuccess(username, password, role)
 
-Any other key(Or Enter) > Re-login
+    else:
+        loginUnsuccessful(
+            "\nWrong credentials!!!\nPlease, make sure you entered correct username and password", username)
 
-What do you want to do? >>> """)).upper()
+        choice_l = input("""
+        B > Go Back
+        X > Exit
+
+        Any other key(Or Enter) > Re-login
+
+        What do you want to do? >>> """).upper()
 
         if choice_l == "B":
             print("\n\nMAIN MENU\n\n")
-            run()
+            run(role)
         elif choice_l == "X":
             exit("\n\nGood bye!!!\n\n")
-    else:
-        pass
+        else:
+            login(role)
+
+
+def login2(role):  # Function that related to login choice
 
     username = input("\nPlease, enter your username >>> ")
     password = input("Please, enter your password >>> ")
-    isCorrect = loginControl(username, password)  # Gets info that if login credentials are correct or not
+    isCorrect = loginControl(username, password, role)  # Gets info that if login credentials are correct or not
     if isCorrect:
-        loginSuccess(username)
+        global counter
+        counter = 0
+        loginSuccess(username, password, role)
     else:
         loginUnsuccessful(
             "\nWrong credentials!!!\nPlease, make sure you entered correct username and password", username)
-
-        login()
-
-
-def login2():  # Function that related to login choice
-
-    username = input("\nPlease, enter your username >>> ")
-    password = input("Please, enter your password >>> ")
-    isCorrect = loginControl(username, password)  # Gets info that if login credentials are correct or not
-    if isCorrect:
-        loginSuccess(username)
-    else:
-        loginUnsuccessful(
-            "\nWrong credentials!!!\nPlease, make sure you entered correct username and password", username)
-        login2()
+        login2(role)
 
 
-def register():  # Function to registering new users
-
-    username = input("\nPlease, enter your username >>> ")
+def register(role):  # Function to registering new users
+    while True:
+        username = input("\nPlease, enter your username >>> ")
+        if username not in RestrictedItems.restricted and not username.isdigit():
+            break
+        else:
+            print("\nNot a valid input for the username, please, try another one\n"
+                  "Note: input cannot be just >>>Integers  or/and ", RestrictedItems.restricted)
     roleInput0 = input("Are you teacher or student. Please select one role: [T] for teacher and [S] for student "
                        ">>> ")
 
@@ -121,11 +122,11 @@ def register():  # Function to registering new users
     isUserRegistered = isRegistered(username)
     if isUserRegistered:
         print("\nThis user exists in our Database. Please, log in your account.")
-        login2()
+        login2(role)
     else:
         createUser(username, password, role)
         print("\nYou have been registered successfully. Please, log in your account.")
-        login2()
+        login2(role)
 
 
 def isRegistered(username):  # Checks if any user registered before or not.
@@ -159,11 +160,13 @@ def isTimeout(username):
     return False
 
 
-def loginControl(username, password):  # Control login credentials
+def loginControl(username, password, role):  # Control login credentials
     credentials = getCredentials()
     try:
         isTimeoutkey = isTimeout(username)
         if credentials[username][0] == password and credentials[username][2] == 0:
+            global counter
+            counter = 0
             return True
         elif credentials[username][0] == password and credentials[username][2] != 0:
             if isTimeoutkey:
@@ -171,9 +174,10 @@ def loginControl(username, password):  # Control login credentials
 ##################### COME BACK LATER ####################''')
             else:
                 credentials[username][2] = 0
+                counter = 0
                 with open("appDB.json", "w") as DB:
                     DB.write(str(credentials))
-                loginSuccess(username)
+                loginSuccess(username, password, role)
 
         elif credentials[username][0] != password:
             if isTimeoutkey:
@@ -185,14 +189,41 @@ def loginControl(username, password):  # Control login credentials
             return False
 
     except KeyError:
-        print("No user was found")
-        login()
+        print("Wrong credentials")
+        choice_l = input("""
+B > Go Back
+X > Exit
+
+Any other key(Or Enter) > Re-login
+
+What do you want to do? >>> """).upper()
+
+        if choice_l == "B":
+            print("\n\nMAIN MENU\n\n")
+            run(role)
+        elif choice_l == "X":
+            exit("\n\nGood bye!!!\n\n")
+        else:
+            login(role)
 
 
-def loginSuccess(username):  # Function that runs when login credentials are correct
-
-    print("You have successfully logged in. Welcome to Quiz App\n####################################################################################")
-    appRun(username)
+def loginSuccess(username, password, role):  # Function that runs when login credentials are correct
+    credentials = getCredentials()
+    global counter
+    counter = 0
+    isTimeoutkey = isTimeout(username)
+    credentials[username][2] = 0
+    try:
+        with open("appDB.json", "w") as DB:
+            DB.write(str(credentials))
+    except:
+        createUser(username, password, role)
+        with open("appDB.json", "w") as DB:
+            DB.write(str(credentials))
+    print(
+        "You have successfully logged in. Welcome to Quiz "
+        "App\n####################################################################################")
+    appRun(username, role)
 
 
 def loginUnsuccessful(reason, username):  # Function that makes the user check his/her login credentials
@@ -200,11 +231,11 @@ def loginUnsuccessful(reason, username):  # Function that makes the user check h
     global counter
     counter = counter + 1
     if counter > 2:
-        t0 = float(time.time() + 300)        #timeout duration(5 minutes)
+        t0 = float(time.time() + 300)  # timeout duration(5 minutes)
         credentials[username][2] = t0
         with open("appDB.json", "w") as DB:
             DB.write(str(credentials))
-        
+
         sys.exit('''You are timed out.
 ##################### COME BACK LATER ####################''')
 
@@ -227,34 +258,23 @@ def getCredentials():  # Gets login credentials from appDB
     return credentials
 
 
-def appRun(username):       #functiono that runs in the last stage of login(to present correct menu)
+def appRun(username, role):  # functiono that runs in the last stage of login(to present correct menu)
     credentials = getCredentials()
     if credentials[username][1] == "T":
-        teacher_menu(username)
+        teacher_menu(username, role)
     else:
-        std_menu(username)
-
-
-
-
-
-
+        std_menu(username, role)
 
 
 # Teacher part(written by Mahammadjan Mahammadjanov)
 
 
-
-
-
-
-
-def create_file(name):                   #function that creates required file when called
+def create_file(name):  # function that creates required file when called
     with open(f"{name}.json", "w") as q_file:
         q_file.write("{}")
 
 
-def view_quizzes(username):      #function for teachers to use when viewing quizzes
+def view_quizzes(username, role):  # function for teachers to use when viewing quizzes
     try:
         with open("quiz.json", "r") as q_file:
             saved_quizzes = ast.literal_eval(q_file.read())
@@ -272,7 +292,7 @@ def view_quizzes(username):      #function for teachers to use when viewing quiz
     print("")
     choice = input("Which quiz do you want to view?(select a number): ")
     if choice.upper() == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
         choice = int(choice)
         to_show = saved_quizzes[x[choice - 1]]
@@ -286,10 +306,10 @@ def view_quizzes(username):      #function for teachers to use when viewing quiz
             print("")
             print("Answer: " + to_show[i]["Answer"])
             print("")
-    return view_quizzes(username)
+    return view_quizzes(username, role)
 
 
-def delete_quizzes(username):        #function for teachers to use when deleting a quiz
+def delete_quizzes(username, role):  # function for teachers to use when deleting a quiz
     possible_choices = ["B"]
 
     try:
@@ -312,7 +332,7 @@ def delete_quizzes(username):        #function for teachers to use when deleting
     print("Quizzes: ")
     for i in range(0, len(x)):
         print(str(i + 1) + " > " + x[i])
-        possible_choices.append(str(i+1))
+        possible_choices.append(str(i + 1))
     print("")
     print("B > Go back")
     print("")
@@ -322,7 +342,7 @@ def delete_quizzes(username):        #function for teachers to use when deleting
         choice = input("Please enter a correct option >>> ").upper()
 
     if choice == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
         choice = int(choice)
         to_delete = x[choice - 1]
@@ -345,11 +365,11 @@ def delete_quizzes(username):        #function for teachers to use when deleting
     print("")
     print("Successfully deleted.")
     print("")
-    return delete_quizzes(username)
+    return delete_quizzes(username, role)
 
 
-def create_quiz(username):       #function for teachers to use when creating quiz
-    quix = {}               #dictionary of the quiz to be created
+def create_quiz(username, role):  # function for teachers to use when creating quiz
+    quix = {}  # dictionary of the quiz to be created
     possible_variants = ["A", "B", "C", "D"]
     try:
         with open("quiz.json", "r") as q_file:
@@ -361,11 +381,17 @@ def create_quiz(username):       #function for teachers to use when creating qui
             quizzes = ast.literal_eval(q_file.read())
 
     while True:
-        quiz_name = input("Enter quiz name >>> ")
+        while True:
+            quiz_name = input("Enter quiz name >>> ")
+            if quiz_name not in RestrictedItems.restricted and not quiz_name.isdigit():
+                break
+            else:
+                print("Not a valid input for quiz name, please, try another one"
+                      "Note: input cannot be just >>> Integers  or/and ", RestrictedItems.restricted)
         for quiz in quizzes.keys():
             if quiz == quiz_name:
                 print("Quiz in this name has already been created, please, try another name.")
-                create_quiz(username)
+                create_quiz(username, role)
         break
 
     quix[quiz_name] = []
@@ -427,10 +453,10 @@ def create_quiz(username):       #function for teachers to use when creating qui
     print("")
     print("Successfully created the quiz!")
     print("")
-    return teacher_menu(username)
+    return teacher_menu(username, role)
 
 
-def view_responses(username):            #function for teachers to use when viewing student responses
+def view_responses(username, role):  # function for teachers to use when viewing student responses
     try:
         with open("responses.json", "r") as r_file:
             responses = ast.literal_eval(r_file.read())
@@ -451,7 +477,7 @@ def view_responses(username):            #function for teachers to use when view
     while choice_s not in n1:
         choice_s = input("Please enter correct option >>> ").upper()
     if choice_s == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
         choice_s = int(choice_s)
         std_name = responded_students[choice_s - 1]
@@ -469,7 +495,7 @@ def view_responses(username):            #function for teachers to use when view
     while choice_q not in n2:
         choice_q = input("Please enter correct option >>> ").upper()
     if choice_q == "B":
-        return view_responses(username)
+        return view_responses(username, role)
     else:
         choice_q = int(choice_q)
         quizz_name = std_answers[choice_q - 1]
@@ -500,10 +526,10 @@ def view_responses(username):            #function for teachers to use when view
 
         print("The score is: " + str(responses[std_name][quizz_name][-1]))
         print("")
-    return view_responses(username)
+    return view_responses(username, role)
 
 
-def edit_student(username):              #function for teachers to use when editting student accounts
+def edit_student(username, role):  # function for teachers to use when editting student accounts
     credentials = getCredentials()
     print('''
 A > Add new student
@@ -517,7 +543,7 @@ B > Go back
     while choice not in choices:
         choice = input("Please enter correct option >>> ").upper()
     if choice == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     elif choice == "A":
 
         username_new = input("\nPlease, enter new username >>> ")
@@ -525,7 +551,7 @@ B > Go back
 
         if isUserRegistered:
             print("\nThis user already exists!")
-            edit_student(username)
+            edit_student(username, role)
         else:
             while True:
                 password = input("\nPlease, enter new password >>> ")
@@ -537,7 +563,7 @@ B > Go back
             createUser(username_new, password, "S")
             print("\nSuccessfully created the new user!")
 
-            return teacher_menu(username)
+            return teacher_menu(username, role)
     else:
         pass
 
@@ -553,14 +579,13 @@ B > Go back
             point += 1
     print("")
 
-
     choice = input("Choose the student you want to edit >>> ").upper()
     while choice not in choices:
         choice = input("Please enter correct option >>> ").upper()
     if choice == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
-        std_username = std_list[int(choice)-1]  # find std username according to list of student
+        std_username = std_list[int(choice) - 1]  # find std username according to list of student
         print('''
 C > Change the password
 D > Delete the account
@@ -575,7 +600,7 @@ B > Go back
             choice2 = input("Please enter correct option >>> ").upper()
 
         if choice2 == "B":
-            return edit_student(username)
+            return edit_student(username, role)
         elif choice2 == "C":
             newpass1 = input("Enter new password >>> ")
             newpass2 = input("Enter again >>> ")
@@ -590,7 +615,7 @@ B > Go back
             print('''
 Succesfully updated the password!''')
 
-            teacher_menu(username)
+            teacher_menu(username, role)
         else:
             choice3 = input("Are you sure?(Y for Yes, N for No) >>> ").upper()
             choices3 = ["Y", "N"]
@@ -603,12 +628,12 @@ Succesfully updated the password!''')
                     DB.write(str(credentials))
                 print("")
                 print("Successfully deleted the user!")
-                teacher_menu(username)
+                teacher_menu(username, role)
             else:
-                edit_student(username)
+                edit_student(username, role)
 
 
-def change_password(username):       #function for teachers to use when changing their own password
+def change_password(username, role):  # function for teachers to use when changing their own password
     credentials = getCredentials()
     print('''
 1 > Change password
@@ -619,7 +644,7 @@ B > Go back
     while choice not in choices:
         choice = input("Please enter correct option >>> ").upper()
     if choice == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
         newpass1 = input("Enter new password >>> ")
         newpass2 = input("Enter again >>> ")
@@ -633,11 +658,10 @@ B > Go back
         DB.write(str(credentials))
     print('''
 Succesfully updated your password!''')
-    teacher_menu(username)
+    teacher_menu(username, role)
 
 
-
-def check_errors(username):         #function for teachers to use when checking feedbacks of students
+def check_errors(username, role):  # function for teachers to use when checking feedbacks of students
     try:
         with open("errors.json", "r") as e_file:
             errors = ast.literal_eval(e_file.read())
@@ -658,7 +682,7 @@ def check_errors(username):         #function for teachers to use when checking 
     while choice_s not in n1:
         choice_s = input("Please enter correct option >>> ").upper()
     if choice_s == "B":
-        return teacher_menu(username)
+        return teacher_menu(username, role)
     else:
         n3 = []
         for i in range(0, len(errors[error_students[int(choice_s) - 1]])):
@@ -682,10 +706,10 @@ def check_errors(username):         #function for teachers to use when checking 
         e_file.write(str(errors))
     print("")
 
-    return check_errors(username)
+    return check_errors(username, role)
 
 
-def teacher_menu(username):         #teacher menu
+def teacher_menu(username, role):  # teacher menu
     option = input('''
 Teacher's menu
 ----------------------------
@@ -702,52 +726,41 @@ X > Exit
 
 Select an option >>> ''')
     if option == "1":
-        view_quizzes(username)
+        view_quizzes(username, role)
 
     elif option == "2":
-        view_responses(username)
+        view_responses(username, role)
 
     elif option == "3":
-        delete_quizzes(username)
+        delete_quizzes(username, role)
 
     elif option == "4":
-        create_quiz(username)
+        create_quiz(username, role)
 
     elif option == "5":
-        edit_student(username)
+        edit_student(username, role)
 
     elif option == "6":
-        change_password(username)
+        change_password(username, role)
 
     elif option == "7":
-        check_errors(username)
+        check_errors(username, role)
 
     elif option.upper() == "B":
-        run()
+        run(role)
 
     elif option.upper() == "X":
         sys.exit()
     else:
         print("")
         print("Please enter correct option.")
-        return teacher_menu(username)
-
-
-
-
-
+        return teacher_menu(username, role)
 
 
 # Student part(written by Gulnur and Mahammadjan Mahammadjanov)
 
 
-
-
-
-
-
-
-def take_quiz(username):                        #function for students to take quiz
+def take_quiz(username, role):  # function for students to take quiz
     possible_variants = ["A", "B", "C", "D"]
     possible_options = ["B"]
 
@@ -771,7 +784,7 @@ def take_quiz(username):                        #function for students to take q
     print("Quizzes: ")
     for i in range(0, len(x)):
         print(str(i + 1) + " > " + x[i])
-        possible_options.append(str(i+1))
+        possible_options.append(str(i + 1))
     print("")
     print("B > Go back")
     print("")
@@ -779,7 +792,7 @@ def take_quiz(username):                        #function for students to take q
     while choice not in possible_options:
         choice = input("Please enter a correct option >>> ").upper()
     if choice.upper() == "B":
-        return std_menu(username)
+        return std_menu(username, role)
     else:
         choice = int(choice)
         quiz_name = x[choice - 1]
@@ -802,9 +815,9 @@ Go back > B
                 while x_choice not in options_list:
                     x_choice = input("Please enter correct option >>> ").upper()
                 if x_choice == "1":
-                    return show_response(quiz_name, username)
+                    return show_response(quiz_name, username, role)
                 else:
-                    return take_quiz(username)
+                    return take_quiz(username, role)
 
             else:
                 correct_number = 0
@@ -823,7 +836,7 @@ Go back > B
                         correct_number += 1
                     else:
                         pass
-                score = round(correct_number / len(to_do) * 100,2)
+                score = round(correct_number / len(to_do) * 100, 2)
                 responses[username][quiz_name].append(score)
                 print("")
                 print("Your score is: " + str(score))
@@ -839,10 +852,12 @@ Go back > B
         with open("responses.json", "w") as rw_file:
             rw_file.write(str(responses))
 
-    return take_quiz(username)
+    return take_quiz(username, role)
 
 
-def show_response(q_name, u_name):      #function for students to use they have already taken a quiz and want to see their response
+def show_response(q_name,
+                  u_name,
+                  role):  # function for students to use they have already taken a quiz and want to see their response
     try:
         with open("quiz.json", "r") as q_file:
             saved_quizzes = ast.literal_eval(q_file.read())
@@ -874,10 +889,10 @@ def show_response(q_name, u_name):      #function for students to use they have 
     print("Your score is: " + str(responses[u_name][q_name][-1]))
     print("")
 
-    return take_quiz(u_name)
+    return take_quiz(u_name, role)
 
 
-def std_menu(username):             #student menu screen
+def std_menu(username, role):  # student menu screen
     option = input('''
 Student's menu
 ----------------------------
@@ -890,26 +905,26 @@ X > Exit
 
 Select an option >>> ''')
     if option == "1":
-        take_quiz(username)
+        take_quiz(username, role)
 
     elif option == "2":
-        std_creds(username)
+        std_creds(username, role)
 
     elif option == "3":
-        report_errors(username)
+        report_errors(username, role)
 
     elif option.upper() == "B":
-        run()
+        run(role)
 
     elif option.upper() == "X":
         sys.exit()
     else:
         print("")
         print("Please enter correct option.")
-        return std_menu(username)
+        return std_menu(username, role)
 
 
-def std_creds(username):                        #function for students to use when changing password
+def std_creds(username, role):  # function for students to use when changing password
     credentials = getCredentials()
     print('''
 1 > Change password
@@ -920,7 +935,7 @@ B > Go back
     while choice not in choices:
         choice = input("Please enter correct option >>> ").upper()
     if choice == "B":
-        return std_menu(username)
+        return std_menu(username, role)
     else:
         newpass1 = input("Enter new password >>> ")
         newpass2 = input("Enter again >>> ")
@@ -934,10 +949,14 @@ B > Go back
         DB.write(str(credentials))
     print('''
 Successfully updated your password!''')
-    std_menu(username)
+    std_menu(username, role)
 
 
-def report_errors(username):            #function for students to use when reporting errors
+def role(role):
+    return role
+
+
+def report_errors(username, role):  # function for students to use when reporting errors
     try:
         with open("errors.json", "r") as e_file:
             errors = ast.literal_eval(e_file.read())
@@ -959,7 +978,8 @@ def report_errors(username):            #function for students to use when repor
     print("")
     print("*********************************\nThanks for your input!\n*********************************")
     print("")
-    return std_menu(username)
+    return std_menu(username, role)
 
 
-run()
+role = role(role)
+run(role)
