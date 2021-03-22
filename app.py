@@ -13,6 +13,33 @@ class RestrictedItems:
     restricted = ["a", "b", "c", "d", "e", "n", "x", "y", " ", "", "A", "B", "C", "D", "E", "N", "X", "Y"]
 
 
+def passSec(
+        password):  # checks password security level. Source:geeksforgeeks.org/python-program-check-validity-password/
+    l, u, p, d = 0, 0, 0, 0
+    if (len(password) >= 8):
+        for i in password:
+
+            # counting lowercase alphabets
+            if (i.islower()):
+                l += 1
+
+            # counting uppercase alphabets
+            if (i.isupper()):
+                u += 1
+
+            # counting digits
+            if (i.isdigit()):
+                d += 1
+
+            # counting the mentioned special characters
+            if (i == '@' or i == '$' or i == '_'):
+                p += 1
+    if (l >= 1 and u >= 1 and p >= 1 and d >= 1 and l + p + u + d == len(password)):
+        return True
+    else:
+        return False
+
+
 def run(role):  # runs login/register functions
     print('''
 Welcome to quiz app.
@@ -87,6 +114,7 @@ def login2(role):  # Function that related to login choice
 
 
 def register(role):  # Function to registering new users
+
     while True:
         username = input("\nPlease, enter your username >>> ")
         if username not in RestrictedItems.restricted and not username.isdigit():
@@ -115,7 +143,34 @@ def register(role):  # Function to registering new users
         password = input("\nPlease, enter your password >>> ")
         passwordRepeat = input("Please, enter your password again >>> ")
         if password == passwordRepeat:
-            break
+            l, u, p, d = 0, 0, 0, 0
+            if (len(password) >= 8):
+                for i in password:
+
+                    # counting lowercase alphabets
+                    if (i.islower()):
+                        l += 1
+
+                    # counting uppercase alphabets
+                    if (i.isupper()):
+                        u += 1
+
+                    # counting digits
+                    if (i.isdigit()):
+                        d += 1
+
+                    # counting the mentioned special characters
+                    if (i == '@' or i == '$' or i == '_'):
+                        p += 1
+            if (l >= 1 and u >= 1 and p >= 1 and d >= 1 and l + p + u + d == len(password)):
+                break
+            else:
+                print('''Password requirements: 
+Minimum 8 characters.
+The alphabets must be between [a-z]
+At least one alphabet should be of Upper Case [A-Z]
+At least 1 number or digit between [0-9].
+At least 1 character from [ _ or @ or $ ].''')
         else:
             print("\n\nPlease, be sure you entered the same password again to avoid mistyping")
 
