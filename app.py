@@ -12,34 +12,6 @@ global t0
 class RestrictedItems:
     restricted = ["a", "b", "c", "d", "e", "n", "x", "y", " ", "", "A", "B", "C", "D", "E", "N", "X", "Y"]
 
-
-def passSec(
-        password):  # checks password security level. Source:geeksforgeeks.org/python-program-check-validity-password/
-    l, u, p, d = 0, 0, 0, 0
-    if (len(password) >= 8):
-        for i in password:
-
-            # counting lowercase alphabets
-            if (i.islower()):
-                l += 1
-
-            # counting uppercase alphabets
-            if (i.isupper()):
-                u += 1
-
-            # counting digits
-            if (i.isdigit()):
-                d += 1
-
-            # counting the mentioned special characters
-            if (i == '@' or i == '$' or i == '_'):
-                p += 1
-    if (l >= 1 and u >= 1 and p >= 1 and d >= 1 and l + p + u + d == len(password)):
-        return True
-    else:
-        return False
-
-
 def run(role):  # runs login/register functions
     print('''
 Welcome to quiz app.
@@ -810,6 +782,7 @@ Select an option >>> ''')
         print("")
         print("Please enter correct option.")
         return teacher_menu(username, role)
+
 
 
 # Student part(written by Gulnur and Mahammadjan Mahammadjanov)
